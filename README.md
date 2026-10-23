@@ -14,6 +14,8 @@ cargo run --release --locked
 ```
 
 The runner selects SWD at 1800 kHz and connects under reset through ST-LINK.
+This is a conservative flashing default; attaching to the running Embassy
+firmware was also verified without `--connect-under-reset`, as described below.
 The firmware starts at `0x08000000`; it replaces the stock Espruino firmware.
 The chip's factory ROM bootloader remains available.
 
@@ -50,5 +52,39 @@ Validated on the connected Iskra JS on 2026-10-23:
 - Closed the debug session and reset the board to leave the firmware running.
 
 Visual LED operation was not independently observed. The register samples confirm
-both logic levels at PB6. `probe-rs` can restore DBGMCU_CR on detach, so a later
-connection to the sleeping board may still require `--connect-under-reset`.
+both logic levels at PB6.
+
+## Connecting without reset
+
+With this Embassy firmware already running, all of the following checks passed
+without `--connect-under-reset`, power cycling, resetting, or flashing:
+
+- CPUID read returned `0x410fc241`.
+- Six consecutive GPIOB reads succeeded and captured both PB6 levels.
+- RTT attach received continuing `PB6 high` / `PB6 low` messages with increasing
+  uptime, without restarting the application.
+- `info --verbose` enumerated the debug port and CoreSight components.
+- DBGMCU_CR at `0xe0042004` read `0x7`: debugging in Sleep, Stop and Standby enabled.
+
+Run these commands from the project directory:
+
+```sh
+probe-rs read b32 0xE000ED00 1 --chip STM32F405RGTx --protocol swd --speed 1800
+probe-rs read b32 0x40020410 2 --chip STM32F405RGTx --protocol swd --speed 1800
+probe-rs info --protocol swd --speed 1800 --verbose
+probe-rs attach target/thumbv7em-none-eabihf/release/iskra-js-embassy \
+  --chip STM32F405RGTx --protocol swd --speed 1800 \
+  --no-catch-reset --no-catch-hardfault
+```
+
+Plain `probe-rs info` still fails with "The connected chip could not automatically
+be determined." This is a separate chip-autodetection limitation: basic `info`
+tries to identify an exact chip, whereas `info --verbose` enumerates components.
+Basic `info` ignores `--chip`; use the explicit chip selection for memory and RTT
+commands, and `--verbose` for component inspection.
+
+The original Espruino firmware was observed entering Sleep through `WFI`, and
+attaching to it without reset was unreliable. That behavior was not reproduced
+in the final Embassy no-reset checks. `probe-rs` restores the previous DBGMCU_CR
+value on detach, so these results describe the tested state and are not a
+guarantee for every firmware or debug-session sequence.
