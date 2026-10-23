@@ -19,6 +19,28 @@ firmware was also verified without `--connect-under-reset`, as described below.
 The firmware starts at `0x08000000`; it replaces the stock Espruino firmware.
 The chip's factory ROM bootloader remains available.
 
+## SWD connector
+
+The six-pin connector is shown in the same orientation as the supplied pinout:
+**pin 1 is the square pad on the right**. Identify that pad on the board before
+matching the row; the drawing does not specify which board edge faces up.
+
+![Six-pin SWD connector: 6 SWO, 5 NRST, 4 SWDIO, 3 GND, 2 SWCLK, 1 3.3 V. Pin 1 is square.](docs/swd-pinout.svg)
+
+| Pin | Signal | Purpose |
+| --- | --- | --- |
+| 1 | 3.3 V | Target 3.3 V rail |
+| 2 | SWCLK | SWD clock |
+| 3 | GND | Common ground |
+| 4 | SWDIO | Bidirectional SWD data |
+| 5 | NRST | Active-low target reset; used for connecting under reset |
+| 6 | SWO | Optional trace output |
+
+Match signals by name when connecting ST-LINK; its connector numbering may differ.
+SWO is not required for the RTT logging used by this project.
+
+## Original firmware backup
+
 Before flashing, the original 1 MiB flash was read twice and verified identical.
 The backup and option-byte snapshot are stored at:
 
