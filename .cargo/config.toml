@@ -1,0 +1,8 @@
+[build]
+target = "thumbv7em-none-eabihf"
+
+[target.thumbv7em-none-eabihf]
+runner = "probe-rs run --chip STM32F405RGTx --protocol swd --speed 1800 --connect-under-reset --verify"
+
+[env]
+DEFMT_LOG = "info"
